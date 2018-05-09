@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<p>Click the button to open a new browser window.</p>
+
+<p>Button below will call this path file:///android_asset/samplepdf.pdf</p>
+<button onclick="myFunction3()">This is local file link on Phone</button>
+<br/>
+<br/>
+<br/>
+<p>Link with href and target="_blank" will open this path file:///android_asset/samplepdf.pdf. It will open pdf in new window
+    <a href="file:///android_asset/samplepdf.pdf" target="_blank">Link1</a></p>
+
+
+
+<script>
+
+function myFunction3() {
+    window.open("file:///android_asset/samplepdf.pdf");
+}
+</script>
+
+</body>
+</html>

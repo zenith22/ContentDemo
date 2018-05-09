@@ -4,13 +4,17 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.ConsoleMessage;
+import android.webkit.CookieManager;
 import android.webkit.JsResult;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage;
@@ -23,6 +27,7 @@ import java.net.URLDecoder;
 public class MainActivity extends Activity {
 
     private final String TAG = "MainActivity";
+    private WebView scormContentWV;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +39,7 @@ public class MainActivity extends Activity {
         String absolutePath = Environment.getExternalStorageDirectory().getAbsolutePath();
         Log.d(TAG,"absolutePath = " + absolutePath);
 
-        WebView scormContentWV = findViewById(R.id.scormContentWV);
+        scormContentWV = findViewById(R.id.scormContentWV);
 
         scormContentWV.setWebChromeClient(new MyChromeClient(false));
         scormContentWV.setWebViewClient(new MyWebViewClient(false));
@@ -54,15 +59,22 @@ public class MainActivity extends Activity {
         contentViewSettings.setAllowFileAccessFromFileURLs(true);
         contentViewSettings.setAllowContentAccess(true);
         contentViewSettings.setAllowUniversalAccessFromFileURLs(true);
-
-
         contentViewSettings.setSupportMultipleWindows(true);
-//        scormContentWV.loadUrl("http://10.70.8.133:8090/scorm/ScormTesting.html");
 
-        scormContentWV.loadUrl("file:///storage/emulated/0/Sample/localFile.html");
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(scormContentWV, true);
 
+        loadWV(null);
     }
 
+    public void loadWV(View view) {
+//        String url = "https://192.168.225.55:8443/scorm/turntown.html";
+//        String url = "https://192.168.225.55:8443/scorm/ScormTestingOnline.html";
+        String url = "file:///android_asset/localFile.html";
+
+        scormContentWV.loadUrl(url);
+    }
 
 
     private class MyChromeClient extends WebChromeClient {
@@ -103,31 +115,17 @@ public class MainActivity extends Activity {
                 newWebView.setLayoutParams(params);
 
                 WebSettings contentViewSettings = newWebView.getSettings();
-                contentViewSettings.setJavaScriptEnabled(true);
-                contentViewSettings.setUseWideViewPort(true);
-                contentViewSettings.setLoadWithOverviewMode(true);
-                contentViewSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-                contentViewSettings.setDomStorageEnabled(true);
-                contentViewSettings.setDatabaseEnabled(true);
-                contentViewSettings.setAppCacheEnabled(true);
-                contentViewSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-                contentViewSettings.setSupportZoom(true);
-                contentViewSettings.setBuiltInZoomControls(true);
+
                 contentViewSettings.setAllowFileAccess(true);
                 contentViewSettings.setAllowFileAccessFromFileURLs(true);
-                contentViewSettings.setAllowContentAccess(true);
                 contentViewSettings.setAllowUniversalAccessFromFileURLs(true);
 
                 WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                 transport.setWebView(newWebView);
                 resultMsg.sendToTarget();
-                newWebView.setWebViewClient(new WebViewClient(){
-                    @Override
-                    public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                        super.onPageStarted(view, url, favicon);
-                        Log.d(TAG,"-------->onPageStarted url = " + url);
-                    }
-                });
+
+                newWebView.setWebViewClient(new NewWebviewClient());
+                newWebView.setWebChromeClient(new NewChromeClient());
                 return true;
             }
 
@@ -192,8 +190,6 @@ public class MainActivity extends Activity {
         private MyWebViewClient(boolean isScorm) {
             this.isScorm = isScorm;
         }
-
-
 
 
         /*
@@ -269,5 +265,9 @@ public class MainActivity extends Activity {
             Log.d(TAG,"-------->onReceivedError" + description);
         }
 
+        @Override
+        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            handler.proceed();
+        }
     }
 }
