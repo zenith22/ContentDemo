@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
@@ -95,7 +96,7 @@ public class MainActivity extends Activity {
 
         @Override
         public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-            Log.d(TAG,"-------->onCreateWindow::"+resultMsg);
+//            Log.d(TAG,"-------->onCreateWindow view.getUrl() = " + view.getUrl());
 
             Message href = view.getHandler().obtainMessage();
             view.requestFocusNodeHref(href);
@@ -108,6 +109,11 @@ public class MainActivity extends Activity {
             String data = result.getExtra();
             Log.d(TAG,"-------->onCreateWindow::type = "+type + ":: data = " + data);
 
+
+//            Log.d(TAG,"-------->onCreateWindow::view.getOriginalUrl() = " + view.getOriginalUrl());
+
+
+
             if(!isScorm) {
                 final WebView newWebView = new WebView(view.getContext());
                 ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -115,17 +121,25 @@ public class MainActivity extends Activity {
                 newWebView.setLayoutParams(params);
 
                 WebSettings contentViewSettings = newWebView.getSettings();
-
+                contentViewSettings.setJavaScriptEnabled(true);
+                contentViewSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+                contentViewSettings.setDomStorageEnabled(true);
+                contentViewSettings.setDatabaseEnabled(true);
+                contentViewSettings.setAppCacheEnabled(true);
+                contentViewSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
                 contentViewSettings.setAllowFileAccess(true);
                 contentViewSettings.setAllowFileAccessFromFileURLs(true);
                 contentViewSettings.setAllowUniversalAccessFromFileURLs(true);
+
+                newWebView.setWebViewClient(new NewWebviewClient());
+                newWebView.setWebChromeClient(new NewChromeClient());
 
                 WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                 transport.setWebView(newWebView);
                 resultMsg.sendToTarget();
 
-                newWebView.setWebViewClient(new NewWebviewClient());
-                newWebView.setWebChromeClient(new NewChromeClient());
+//                view.addView(newWebView);
+
                 return true;
             }
 

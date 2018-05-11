@@ -105,6 +105,7 @@ public class NewWebviewClient extends WebViewClient{
 
     @Override
     public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+        Log.d(TAG,"12 = " + error);
         super.onReceivedSslError(view, handler, error);
     }
 
@@ -120,7 +121,7 @@ public class NewWebviewClient extends WebViewClient{
 
     @Override
     public boolean shouldOverrideKeyEvent(WebView view, KeyEvent event) {
-        Log.d(TAG,"12 = " + event.toString());
+        Log.d(TAG,"13 = " + event.toString());
         return super.shouldOverrideKeyEvent(view, event);
     }
 
