@@ -1,10 +1,13 @@
 package com.saba.contentdemo;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.net.http.SslError;
 import android.os.Message;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewParent;
 import android.webkit.ClientCertRequest;
 import android.webkit.HttpAuthHandler;
 import android.webkit.RenderProcessGoneDetail;
@@ -14,6 +17,9 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * Created by AInamdar on 5/7/2018.
@@ -22,17 +28,25 @@ import android.webkit.WebViewClient;
 public class NewWebviewClient extends WebViewClient{
 
     private final String TAG = "NewWebviewClient";
-    @Override
-    public boolean shouldOverrideUrlLoading(WebView view, String url) {
-        Log.d(TAG,"1 = " + url);
-        return super.shouldOverrideUrlLoading(view, url);
+    private final Activity mContext;
+
+    public NewWebviewClient(Activity context) {
+        this.mContext = context;
     }
 
     @Override
-    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-        Log.d(TAG,"2 = " + request.getUrl());
-        return super.shouldOverrideUrlLoading(view, request);
+    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        Log.d(TAG,"1 = " + url);
+        String log = "  --> shouldOverrideUrlLoading :: url = " + url;
+        Toast.makeText(mContext,log,Toast.LENGTH_LONG).show();
+        TextView logsTV = mContext.findViewById(R.id.logsTV);
+        logsTV.append("\n\n" + log);
+
+        ScrollView parent = (ScrollView) logsTV.getParent();
+        parent.smoothScrollTo(0,parent.getBottom());
+        return super.shouldOverrideUrlLoading(view, url);
     }
+
 
     @Override
     public void onPageStarted(WebView view, String url, Bitmap favicon) {

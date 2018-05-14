@@ -7,20 +7,17 @@ import android.graphics.Bitmap;
 import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.ConsoleMessage;
-import android.webkit.CookieManager;
 import android.webkit.JsResult;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.TextView;
 
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -38,112 +35,64 @@ public class MainActivity extends Activity {
         WebView.setWebContentsDebuggingEnabled(true);
 
         String absolutePath = Environment.getExternalStorageDirectory().getAbsolutePath();
-        Log.d(TAG,"absolutePath = " + absolutePath);
+        Log.d(TAG, "absolutePath = " + absolutePath);
 
         scormContentWV = findViewById(R.id.scormContentWV);
 
-        scormContentWV.setWebChromeClient(new MyChromeClient(false));
-        scormContentWV.setWebViewClient(new MyWebViewClient(false));
+        scormContentWV.setWebChromeClient(new MyChromeClient());
+        scormContentWV.setWebViewClient(new MyWebViewClient());
 
-        WebSettings contentViewSettings = scormContentWV.getSettings();
-        contentViewSettings.setJavaScriptEnabled(true);
-        contentViewSettings.setUseWideViewPort(true);
-        contentViewSettings.setLoadWithOverviewMode(true);
-        contentViewSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-        contentViewSettings.setDomStorageEnabled(true);
-        contentViewSettings.setDatabaseEnabled(true);
-        contentViewSettings.setAppCacheEnabled(true);
-        contentViewSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        contentViewSettings.setSupportZoom(true);
-        contentViewSettings.setBuiltInZoomControls(true);
-        contentViewSettings.setAllowFileAccess(true);
-        contentViewSettings.setAllowFileAccessFromFileURLs(true);
-        contentViewSettings.setAllowContentAccess(true);
-        contentViewSettings.setAllowUniversalAccessFromFileURLs(true);
-        contentViewSettings.setSupportMultipleWindows(true);
+        WebviewUtil.setWebviewSettingsForContent(scormContentWV, true);
 
-        CookieManager cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true);
-        cookieManager.setAcceptThirdPartyCookies(scormContentWV, true);
 
-        loadWV(null);
+        TextView logsTV = findViewById(R.id.logsTV);
+        logsTV.append("User Agent = " + scormContentWV.getSettings().getUserAgentString());
+
+        loadWV();
     }
 
-    public void loadWV(View view) {
-//        String url = "https://192.168.225.55:8443/scorm/turntown.html";
-//        String url = "https://192.168.225.55:8443/scorm/ScormTestingOnline.html";
-        String url = "file:///android_asset/localFile.html";
+    private void loadWV() {
 
-        scormContentWV.loadUrl(url);
+        String frameset = "<html><head></head>\n" +
+                "<frameset framespacing=\"0\" rows=\"*,0\" frameborder=\"0\" noresize>\n" +
+                "<frame src=\"file:///android_asset/test1.html\">\n" +
+                "</frameset></html>";
+
+        scormContentWV.loadDataWithBaseURL("file:///", frameset, "text/html", "UTF-8", null);
     }
 
 
     private class MyChromeClient extends WebChromeClient {
 
 
-        private final boolean isScorm;
-
-        private MyChromeClient(boolean isScorm){
-            this.isScorm = isScorm;
-        }
-
         @Override
         public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
-            Log.d(TAG,"-------->onJsAlert Message::"+ message);
+            Log.d(TAG, "-------->onJsAlert Message::" + message);
             return false;
 
         }
 
         @Override
         public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-//            Log.d(TAG,"-------->onCreateWindow view.getUrl() = " + view.getUrl());
+            Log.d(TAG, "-------->onCreateWindow --------->");
 
-            Message href = view.getHandler().obtainMessage();
-            view.requestFocusNodeHref(href);
+            final WebView newWebView = new WebView(view.getContext());
+            ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            params.topMargin = PixelUtil.dpToPx(MainActivity.this, 40);
+            newWebView.setLayoutParams(params);
 
-            String url = href.getData().getString("url");
-            Log.d(TAG,"-------->onCreateWindow::url = "+url);
+            WebviewUtil.setWebviewSettingsForContent(newWebView, false);
 
-            WebView.HitTestResult result = view.getHitTestResult();
-            int type = result.getType();
-            String data = result.getExtra();
-            Log.d(TAG,"-------->onCreateWindow::type = "+type + ":: data = " + data);
+            newWebView.setWebViewClient(new NewWebviewClient(MainActivity.this));
+            newWebView.setWebChromeClient(new NewChromeClient());
 
-
-//            Log.d(TAG,"-------->onCreateWindow::view.getOriginalUrl() = " + view.getOriginalUrl());
-
-
-
-            if(!isScorm) {
-                final WebView newWebView = new WebView(view.getContext());
-                ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-                params.topMargin = PixelUtil.dpToPx(MainActivity.this,40);
-                newWebView.setLayoutParams(params);
-
-                WebSettings contentViewSettings = newWebView.getSettings();
-                contentViewSettings.setJavaScriptEnabled(true);
-                contentViewSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-                contentViewSettings.setDomStorageEnabled(true);
-                contentViewSettings.setDatabaseEnabled(true);
-                contentViewSettings.setAppCacheEnabled(true);
-                contentViewSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-                contentViewSettings.setAllowFileAccess(true);
-                contentViewSettings.setAllowFileAccessFromFileURLs(true);
-                contentViewSettings.setAllowUniversalAccessFromFileURLs(true);
-
-                newWebView.setWebViewClient(new NewWebviewClient());
-                newWebView.setWebChromeClient(new NewChromeClient());
-
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                transport.setWebView(newWebView);
-                resultMsg.sendToTarget();
+            WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+            transport.setWebView(newWebView);
+            resultMsg.sendToTarget();
 
 //                view.addView(newWebView);
 
-                return true;
-            }
-
-            return super.onCreateWindow(view,isDialog,isUserGesture,resultMsg);
+            return true;
         }
 
         public void onExceededDatabaseQuota(String url, String databaseIdentifier, long currentQuota, long estimatedSize,
@@ -159,31 +108,23 @@ public class MainActivity extends Activity {
          */
         @Override
         public boolean onConsoleMessage(ConsoleMessage cm) {
-            Log.d(TAG,"-------->Console" + cm.message() + " -- From line " + cm.lineNumber() + " of " + cm.sourceId() );
-            //DO NOT try some exitAndSync() adventure here. It starts saveInBackground & whatnot, and
-            //then in the meantime the user presses DONE, we have unknown behavior
+            Log.d(TAG, "-------->onConsoleMessage = " + cm.message() + " -- From line " + cm.lineNumber() + " of " + cm.sourceId());
             return true;
         }
 
 
-
-        /*
-         * (non-Javadoc)
-         *
-         * @see android.webkit.WebChromeClient#onProgressChanged(android.webkit.WebView , int)
-         */
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
             super.onProgressChanged(view, newProgress);
 
-            Log.d(TAG,"-------->onProgressChanged = "+ newProgress );
+            Log.d(TAG, "-------->onProgressChanged = " + newProgress);
         }
 
         @Override
         public void onCloseWindow(WebView window) {
             super.onCloseWindow(window);
             Log.d(TAG, "MyChromeClient - onCloseWindow------------>");
-            if(!isScorm && window != null) {
+            if (window != null) {
                 window.onPause();
                 window.destroy();
 
@@ -199,21 +140,6 @@ public class MainActivity extends Activity {
     public class MyWebViewClient extends WebViewClient {
 
 
-        private final boolean isScorm;
-
-        private MyWebViewClient(boolean isScorm) {
-            this.isScorm = isScorm;
-        }
-
-
-        /*
-         * (non-Javadoc)
-         *
-         * @see android.webkit.WebViewClient#shouldOverrideUrlLoading(android.webkit .WebView,
-         * java.lang.String)
-         * Should return true if we want to tell the webview that we are going to handle the url our way (i.e. tell webview get lost and don't do anything to our url)
-         * return false if we want the webview to handle our url
-         */
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
 
@@ -223,7 +149,7 @@ public class MainActivity extends Activity {
                 e.printStackTrace();
             }
 
-            Log.d(TAG,"-------->shouldOverrideUrlLoading::LoadUrl = " + url);
+            Log.d(TAG, "-------->shouldOverrideUrlLoading::LoadUrl = " + url);
             String fileType = null;
             if (url.startsWith("intent://")) {
                 try {
@@ -240,43 +166,38 @@ public class MainActivity extends Activity {
                 }
                 return false;
             } else if (DownloadUtils.getInstance().isFile(url)) {
-                Log.d(TAG,"-------->DownloadUtils.getInstance().isFile(url)");
+                Log.d(TAG, "-------->DownloadUtils.getInstance().isFile(url)");
                 return true;
             } else if (url.contains("file:///") || url.contains("file://GD_Content")) {
-                Log.d(TAG,"-------->url.contains(\"file:///\") || url.contains(\"file://GD_Content\")");
+                Log.d(TAG, "-------->url.contains(\"file:///\") || url.contains(\"file://GD_Content\")");
                 return false;
             } else if (url.compareToIgnoreCase("about:blank") == 0) {
                 //Tell the WebView that *WE* will be taking care of about:blank & that
                 //it should leave it be. This is because if we let the WebView load a:b
                 //then later when user clicks Done, we get all sorts of JavaScript
                 //errors when trying to unload
-                Log.d(TAG,"-------->url.compareToIgnoreCase(\"about:blank\") == 0");
+                Log.d(TAG, "-------->url.compareToIgnoreCase(\"about:blank\") == 0");
                 return true;
-            }else {
-                Log.d(TAG,"-------->Last else where iScorm = " + isScorm);
-                if(isScorm) {
-                    return true;
-                }else{
-                    return false;
-                }
+            } else {
+                return true;
             }
         }
 
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
-            Log.d(TAG,"-------->onPageFinished = " + url);
+            Log.d(TAG, "-------->onPageFinished = " + url);
         }
 
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             super.onPageStarted(view, url, favicon);
-            Log.d(TAG,"-------->onPageStarted = " + url);
+            Log.d(TAG, "-------->onPageStarted = " + url);
         }
 
         @Override
         public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-            Log.d(TAG,"-------->onReceivedError" + description);
+            Log.d(TAG, "-------->onReceivedError" + description);
         }
 
         @Override
